@@ -30,6 +30,7 @@ dependencies = [
 [project.optional-dependencies]
 gemini = ["langchain-google-genai"]
 openai = ["langchain-openai"]
+ui = ["streamlit>=1.30"]
 dev = ["pytest"]
 
 [build-system]
