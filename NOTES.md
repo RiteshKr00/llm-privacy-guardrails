@@ -210,3 +210,45 @@ The lesson: don't try to suppress Presidio's noisy sub-recognizers at the detect
 - NER recall is context-dependent. Evals should stress this with mixed cued/uncued documents.
 
 ---
+
+## Day 4 — 2026-05-31
+
+### First LangGraph node
+
+Installed `langgraph`, built a one-node `StateGraph`:
+
+- **State:** a `TypedDict` with two fields — `document_text` (input) and `findings` (output).
+- **Node:** `detect_node(state)` reads `document_text`, runs all three detectors, calls `reconcile()`, and returns `{"findings": deduped}` — a partial state update.
+- **Edges:** `START → detect → END`.
+
+The graph is **declarative**: I don't call `detect_node` myself. I declare it as a node, connect it with edges, `.compile()` the graph, then `.invoke()` it with an initial state.
+
+### Lesson: structural-only changes should produce identical output
+
+Output of Day 4 graph is byte-for-byte the same as Day 3's reconciler output — same 8 findings, same offsets, same scores. **That's the success criterion for Day 4.** If the agent-shaped wiring had changed the answer, I would have introduced an unintended logic change.
+
+This is a useful invariant for future refactors: when restructuring a pipeline, the *first* version of the restructure should produce identical output to the old version. Then add the new behavior on top in a second pass.
+
+### Mental model — what changed and what didn't
+
+| Old | New |
+|---|---|
+| `reconcile(scan_with_presidio(t) + scan_aadhaar(t) + scan_pan(t))` | `app.invoke({"document_text": t, "findings": []})["findings"]` |
+| Imperative chain of function calls | Declarative graph compiled to a runnable |
+| Adding "decide treatment" = wrap the chain in another function | Adding "decide treatment" = add one node + one edge |
+
+The extensibility is the value — invisible at one node, real at multiple. Day 5 makes it visible.
+
+### Tiny LangGraph mechanics worth knowing
+
+- A node returns a **partial dict** of updates, not the full state. LangGraph merges automatically. You never have to pass through fields you didn't change.
+- `START` and `END` are LangGraph-provided sentinel nodes — every graph has them.
+- Default merge semantics for state fields is **replace** (the node's return value clobbers whatever was there). When we add multiple nodes writing to the same field (e.g., an `audit_log` that accumulates across nodes), we'll need `Annotated[list, operator.add]` reducer. Not needed yet — only one node writes `findings`.
+
+### What I'd tell future-me (Day 4)
+
+- The hardest part of an agent isn't the agent — it's the deterministic plumbing the agent orchestrates. If that's solid, adding the graph layer is mechanical.
+- "Same output as before" is a feature for the first version of any restructure. Only add new behavior in a *second* pass, never the first.
+- Default LangGraph state merge is "replace per field." Reducers are the exception for accumulating fields. Don't reach for reducers until you need them.
+
+---
