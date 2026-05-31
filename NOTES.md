@@ -252,3 +252,53 @@ The extensibility is the value — invisible at one node, real at multiple. Day 
 - Default LangGraph state merge is "replace per field." Reducers are the exception for accumulating fields. Don't reach for reducers until you need them.
 
 ---
+
+## Day 5 — 2026-05-31
+
+### Two-node agent: detect + decide
+
+Added:
+
+- `scratch/treatment.py`: `Treatment` dataclass + the `TREATMENT_MATRIX` constant (entity_type × recipient_profile → action).
+- `scratch/05_decide_agent.py`: extended state with `recipient_profile` and `treatments`. Added `decide_node` that performs matrix lookup per finding. Graph is now `START → detect → decide → END`.
+
+`decide_node` makes **no LLM call.** It's a deterministic dict lookup. The "decision" is encoded in the matrix; the function just applies it. (Phase 4 will add an LLM-driven `policy_lookup` that can *override* the matrix toward stricter — never looser.)
+
+### Lesson: state grows monotonically across nodes
+
+| Node | Reads | Writes |
+|---|---|---|
+| `detect` | `document_text` | `findings` |
+| `decide` | `findings`, `recipient_profile` | `treatments` |
+
+Each node touches a different slice. LangGraph merges automatically — no need to pass through fields a node didn't change. This is the pattern that scales to 4, 5, 10 nodes without bookkeeping pain.
+
+### Lesson: the demo screen-share is real
+
+Same 8 findings → three different treatment outputs based on `recipient_profile`:
+
+- **auditor** keeps almost everything; only masks AADHAAR / PAN / CREDIT_CARD (last-4-digits visible for verification)
+- **vendor** pseudonymizes PERSON (preserves co-occurrence patterns), tokenizes EMAIL (reversible via vault), masks PHONE, redacts hard IDs
+- **public** redacts everything sensitive; only LOCATION stays (city-level → not identifying)
+
+One source → three policy-correct outputs. The "recipient-aware morphing" pitch is no longer theoretical.
+
+### Decisions vs application — important distinction
+
+The agent has now *decided* what to do with each finding. **It hasn't actually changed the document text.** The morphing step is Day 6 — the `apply` node will take `state["treatments"]` and rewrite `state["document_text"]` accordingly.
+
+This separation matters: the decision logic is testable in isolation (assert "PERSON × vendor → pseudonymize" without ever applying anything). The application logic is testable in isolation (assert that `apply` of `redact` to offsets (10, 20) replaces those characters correctly). Coupling them would mean every test needs both. Keep them split.
+
+### Tiny implementation choices worth knowing
+
+- **Two-layer matrix fallback**: unknown `entity_type` → `DEFAULT_TREATMENT`; known `entity_type` but unknown `profile` → also `DEFAULT_TREATMENT`. Fail-safe: never silently keep PII we don't have a policy for. Default is `redact`.
+- **LOCATION is "keep" in all three profiles** (v1 only): I'm scoping LOCATION to city-grain. A real implementation needs street-level detection + a per-grain treatment (street → redact, city → keep, country → keep). Future work.
+
+### What I'd tell future-me (Day 5)
+
+- Multi-node state flow is barely more code than single-node — once the first node works, adding the second is ~10 lines.
+- Separating *decisions* from *application* is the right cut. Two simple steps beat one combined step that's hard to test.
+- The treatment matrix is just config. Keep it boring data; resist the urge to make it a class hierarchy.
+- A safe-by-default fallback (unknown → redact) is non-negotiable. The cost of over-redaction is a noisy output; the cost of under-redaction is a leak.
+
+---
