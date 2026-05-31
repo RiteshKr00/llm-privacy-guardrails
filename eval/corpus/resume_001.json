@@ -1,0 +1,62 @@
+{
+  "doc_id": "resume_001",
+  "genre": "resume",
+  "text": "Aarav Verhoeff\nSoftware Engineer\nEmail: aarav.verhoeff@example.com | Phone: +1-202-555-0123\nAddress: 42 Fictional Maple Street, Springfield\n\nEXPERIENCE\nAcme Corp — Senior Backend Engineer (2022-Present)\n  Led the migration of legacy services to microservices.\n\nEDUCATION\nBTech in Computer Science (2018-2022)",
+  "labels": [
+    {
+      "text": "Aarav Verhoeff",
+      "start": 0,
+      "end": 14,
+      "entity_type": "PERSON",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "pseudonymize",
+        "public": "pseudonymize"
+      }
+    },
+    {
+      "text": "aarav.verhoeff@example.com",
+      "start": 40,
+      "end": 66,
+      "entity_type": "EMAIL_ADDRESS",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "tokenize",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "+1-202-555-0123",
+      "start": 76,
+      "end": 91,
+      "entity_type": "PHONE_NUMBER",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "mask",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "Fictional Maple Street",
+      "start": 104,
+      "end": 126,
+      "entity_type": "LOCATION",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "keep",
+        "public": "keep"
+      }
+    },
+    {
+      "text": "Springfield",
+      "start": 128,
+      "end": 139,
+      "entity_type": "LOCATION",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "keep",
+        "public": "keep"
+      }
+    }
+  ]
+}

@@ -381,3 +381,45 @@ End-to-end: input doc → detection → reconciliation → decision → applicat
 - Three working profiles are enough for v1. Adding a fourth is a 10-minute matrix edit; adding the fifth action handler is more interesting and only happens when the matrix demands it.
 
 ---
+
+## Day 7 — 2026-05-31
+
+### Phase 3 begins: building the eval corpus
+
+Started `eval/` directory. Structure:
+
+```
+eval/
+  README.md              — corpus design + format spec
+  build_corpus.py        — programmatic builder (computes offsets in lockstep)
+  validate_corpus.py     — asserts every label's text matches text[start:end]
+  corpus/                — output: one JSON per labeled doc
+    resume_001.json
+    resume_002.json
+    resume_003.json
+```
+
+Three resume docs labeled and passing validation. 17 labeled spans total across the 3 docs.
+
+### Lesson: never count offsets by hand
+
+The corpus builder uses an `_add(text, labels, span, type)` helper that appends a PII span to the running text AND records its label with computed offsets in the same step. Two consequences:
+
+1. **The offsets cannot drift relative to the text** — they're computed from `len(text)` at the moment of insertion.
+2. **Editing a doc just means re-running `build_corpus.py`** — offsets are recomputed automatically. No "find/replace and pray."
+
+This pattern is the right shape for any test corpus where you'd otherwise hand-count character positions. The 30 minutes spent writing the builder buys back hours of correctness later.
+
+### Lesson: build the validator before you build the corpus
+
+`validate_corpus.py` is 50 lines and pays for itself the first time anyone edits a doc by hand. It compares `text` field vs `text[start:end]` for every label. Mismatch → loud failure.
+
+In Phase 5 (when the corpus has 15+ docs), this validator runs in CI. For now, run it manually after any edit.
+
+### What I'd tell future-me (Day 7)
+
+- Offsets-in-lockstep with text-in-progress is a universal pattern for test data with positional labels (NER, span extraction, token classification). Reach for it whenever the test data has hand-computed positions.
+- A 50-line validator is cheaper than one hour of mysterious test failure. Write the validator before you write the test data.
+- A 3-doc corpus is enough to validate the format. Don't generate 30 docs until you've confirmed the schema works at 3.
+
+---

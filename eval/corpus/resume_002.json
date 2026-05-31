@@ -1,0 +1,73 @@
+{
+  "doc_id": "resume_002",
+  "genre": "resume",
+  "text": "Application form\n\nFull name: Priya Datacheck\nContact: priya.datacheck@example.test\nMobile: +1-202-555-0199\n\nIdentity documents:\n  Aadhaar: 0000 1234 5676\n  PAN: ZZZZP1234X\n\nCurrent city: Bengaluru\nReferences available on request.",
+  "labels": [
+    {
+      "text": "Priya Datacheck",
+      "start": 29,
+      "end": 44,
+      "entity_type": "PERSON",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "pseudonymize",
+        "public": "pseudonymize"
+      }
+    },
+    {
+      "text": "priya.datacheck@example.test",
+      "start": 54,
+      "end": 82,
+      "entity_type": "EMAIL_ADDRESS",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "tokenize",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "+1-202-555-0199",
+      "start": 91,
+      "end": 106,
+      "entity_type": "PHONE_NUMBER",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "mask",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "0000 1234 5676",
+      "start": 139,
+      "end": 153,
+      "entity_type": "AADHAAR",
+      "treatments": {
+        "auditor": "mask",
+        "vendor": "redact",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "ZZZZP1234X",
+      "start": 161,
+      "end": 171,
+      "entity_type": "PAN",
+      "treatments": {
+        "auditor": "mask",
+        "vendor": "redact",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "Bengaluru",
+      "start": 187,
+      "end": 196,
+      "entity_type": "LOCATION",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "keep",
+        "public": "keep"
+      }
+    }
+  ]
+}

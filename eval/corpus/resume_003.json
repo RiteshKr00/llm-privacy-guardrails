@@ -1,0 +1,62 @@
+{
+  "doc_id": "resume_003",
+  "genre": "resume",
+  "text": "Freelancer profile — Rohan Testname\n\nPreferred email: rohan.testname@example.com\nBackup phone (text only): +1-202-555-0177\n\nPayment method on file:\n  Card: 4111-1111-1111-1111 (test card, do not charge)\n  Billing city: Pune\n\nNotes: Available for backend Python work, prefers async / Celery stacks.",
+  "labels": [
+    {
+      "text": "Rohan Testname",
+      "start": 21,
+      "end": 35,
+      "entity_type": "PERSON",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "pseudonymize",
+        "public": "pseudonymize"
+      }
+    },
+    {
+      "text": "rohan.testname@example.com",
+      "start": 54,
+      "end": 80,
+      "entity_type": "EMAIL_ADDRESS",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "tokenize",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "+1-202-555-0177",
+      "start": 107,
+      "end": 122,
+      "entity_type": "PHONE_NUMBER",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "mask",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "4111-1111-1111-1111",
+      "start": 156,
+      "end": 175,
+      "entity_type": "CREDIT_CARD",
+      "treatments": {
+        "auditor": "mask",
+        "vendor": "redact",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "Pune",
+      "start": 219,
+      "end": 223,
+      "entity_type": "LOCATION",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "keep",
+        "public": "keep"
+      }
+    }
+  ]
+}
