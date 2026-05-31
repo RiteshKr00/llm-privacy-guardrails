@@ -524,3 +524,77 @@ llama3.2:3b handles free-text generation easily (the smoke test was trivial for 
 If 3b can't hold the Pydantic schema reliably even with retries, the fallback is `llama3.1:8b` (5GB pull) or `qwen2.5:7b` (better at structured tasks), set via `OLLAMA_MODEL`. Or pivot to Gemini for the eval (`LLM_PROVIDER=gemini`).
 
 ---
+
+## Day 11 — 2026-05-31
+
+### LLM extractor wired and measured — Phase 4 hypothesis confirmed
+
+`scratch/llm_extractor.py`: `scan_with_llm(text)` returns `list[Finding]` using LangChain's `.with_structured_output()` against a Pydantic `LLMFindings` schema.
+
+**Design choice that makes 3b models work better:** don't ask the LLM for character offsets. The LLM returns only `text + entity_type`; Python's `str.find()` does the offsetting. This sidesteps the LLM's well-known weakness at counting characters AND makes hallucination-checking trivial (a substring not found = drop). Also finds **all occurrences** of a repeated span, not just the first.
+
+### Eval — full table at 15 docs / 60 labels
+
+```
+config                     TP   FP   FN   recall    precision   F1
+all_four_reconciled        58   18    2   96.67%    76.32%   85.29%   ← lowest FNs
+llm_only                   49    3   11   81.67%    94.23%   87.50%   ← highest F1
+merged_no_llm_reconciled   51   18    9   85.00%    73.91%   79.07%
+presidio_only              45   35   15   75.00%    56.25%   64.29%
+regex_only                  6    2   54   10.00%    75.00%   17.65%
+```
+
+### Headline lesson: the LLM adds 7 true positives the deterministic stack misses
+
+`merged_no_llm_reconciled` → `all_four_reconciled`:
+- +7 TP (51 → 58)
+- **−7 FN (9 → 2)**
+- Recall jumps from 85% to **96.67%** — 4.5× fewer leaks
+- Precision drops slightly (74% → 76%) — actually IMPROVES because the LLM is highly precise
+- F1 climbs from 79.07% to 85.29%
+
+The Phase 4 hypothesis (LLM helps catch Indian-name PERSON entities) is confirmed. Per-doc evidence:
+- `indian_gov_form_002`: merged_no_llm 5/6 → all_four 6/6
+- `indian_gov_form_003`: merged_no_llm 5/6 → all_four 6/6
+- `internal_chat_003`: merged_no_llm 2/5 → all_four 5/5 (LLM caught 3 of 3 Indian names spaCy missed)
+
+### Lesson: recall > F1 for a privacy use case
+
+`llm_only` has the highest F1 (87.50%), but `all_four_reconciled` has the highest recall (96.67%). **For a privacy guardrail, optimizing for F1 is the wrong metric.** A leak (missed PII) is a real-world breach; over-redaction is just noisy.
+
+The interview defense: *"My eval shows the LLM extractor adds 7 TPs that the deterministic detectors miss, bringing recall to 96.67%. F1 favors the LLM-only configuration at 87.5%, but for privacy I optimize for recall, not F1 — the cost of a missed Aadhaar in production isn't comparable to the cost of a redacted phone number that didn't need to be."*
+
+### Lesson: 3b models have run-to-run variance even at temperature=0.1
+
+Two consecutive eval runs:
+- Run 1 (interrupted, partial): `llm_only` was TP=51, FP=2, FN=9 — F1=90.27%
+- Run 2 (full): `llm_only` was TP=49, FP=3, FN=11 — F1=87.50%
+
+Same code, same model, same temperature. **5% variance in TP/FN on a 60-label corpus at this model size.** Implications:
+
+- The deterministic detectors (Presidio, regex) ARE deterministic — Presidio's numbers were identical in both runs.
+- LLM determinism is a *spectrum* depending on size, sampling, and prompt sensitivity. Smaller models = more variance.
+- For audit/compliance contexts that require reproducible output, this matters. **Document the per-run variance honestly; don't claim deterministic behavior the system doesn't have.**
+- Mitigation: log every LLM input/output so a discrepancy is reviewable post-hoc. Don't try to eliminate variance at the cost of recall.
+
+### One real bug to flag for Phase 5 polish
+
+`resume_002` per-doc: `llm_only` got 6/6 (perfect) but `all_four_reconciled` got 5/6 (one FN). Reconciler appears to have *kept a lower-quality Presidio span that doesn't match a label*, when it could have kept the LLM's better span.
+
+Hypothesis: Presidio's PERSON conf=0.85 > LLM's PERSON conf=0.8. When both overlap, reconciler picks Presidio. But if Presidio's span doesn't cover the full labeled entity (e.g., just "Priya" instead of "Priya Datacheck"), the greedy span-matcher may end up paired with the partial Presidio span instead of the full LLM span.
+
+Fix candidates (Phase 5):
+1. **Same-type tie should prefer the longer span** (more complete coverage).
+2. **Boost confidence when two detectors agree on entity_type** at overlapping offsets (the cross-detector-agreement idea from earlier docs).
+3. Tune LLM confidence above Presidio's NER confidence (0.85+).
+
+Not urgent. Recall is still 96.67% overall. Note for the v1 polish phase.
+
+### What I'd tell future-me (Day 11)
+
+- For privacy systems, recall is the metric. Lead with recall; report F1 only as a sanity check.
+- 3b is "good enough" for structured PII extraction when you DON'T ask for offsets. Save the model from things it's bad at; do them in Python.
+- LLM determinism isn't real at 3b scale — document the variance, don't pretend it isn't there.
+- Cross-detector reconciliation with simple "wins-by-confidence" leaves recall on the table when a lower-confidence detector has the better span. Same-type-prefer-longer-span is the v1 polish fix.
+
+---

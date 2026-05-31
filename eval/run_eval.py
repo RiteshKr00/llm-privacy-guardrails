@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scratch"))
 
 from finding import Finding
 from india_regex import scan_aadhaar, scan_pan
+from llm_extractor import scan_with_llm
 from presidio_wrapper import scan_with_presidio
 from reconcile import reconcile
 from treatment import TREATMENT_MATRIX, DEFAULT_TREATMENT
@@ -69,13 +70,21 @@ def _safe_div(num: int, den: int) -> float:
 def evaluate_detector(corpus: list, detector_fn, name: str) -> dict:
     """Run `detector_fn` over every doc, aggregate TP/FP/FN, compute P/R/F1."""
     total_tp = total_fp = total_fn = 0
-    for doc in corpus:
+    n = len(corpus)
+    print(f"  Running {name}...", flush=True)
+    for i, doc in enumerate(corpus, start=1):
+        # Per-doc progress: visible on slow detectors (LLM in particular).
+        print(f"    [{i:2d}/{n}] {doc['doc_id']:<32}", end="", flush=True)
         labels = doc["labels"]
         findings = detector_fn(doc["text"])
         matched_l, matched_f = match_labels_to_findings(labels, findings)
-        total_tp += len(matched_l)
-        total_fn += len(labels) - len(matched_l)
-        total_fp += len(findings) - len(matched_f)
+        tp = len(matched_l)
+        fn = len(labels) - tp
+        fp = len(findings) - len(matched_f)
+        total_tp += tp
+        total_fn += fn
+        total_fp += fp
+        print(f"  tp={tp:>3}  fp={fp:>3}  fn={fn:>3}", flush=True)
 
     recall = _safe_div(total_tp, total_tp + total_fn)
     precision = _safe_div(total_tp, total_tp + total_fp)
@@ -143,8 +152,11 @@ def main():
     configs = [
         ("presidio_only", lambda t: scan_with_presidio(t)),
         ("regex_only (Aadhaar+PAN)", lambda t: scan_aadhaar(t) + scan_pan(t)),
-        ("merged_unreconciled", lambda t: scan_with_presidio(t) + scan_aadhaar(t) + scan_pan(t)),
-        ("merged_reconciled", lambda t: reconcile(scan_with_presidio(t) + scan_aadhaar(t) + scan_pan(t))),
+        ("llm_only", lambda t: scan_with_llm(t)),
+        ("merged_no_llm_reconciled",
+         lambda t: reconcile(scan_with_presidio(t) + scan_aadhaar(t) + scan_pan(t))),
+        ("all_four_reconciled",
+         lambda t: reconcile(scan_with_presidio(t) + scan_aadhaar(t) + scan_pan(t) + scan_with_llm(t))),
     ]
 
     for name, fn in configs:
