@@ -1,0 +1,51 @@
+{
+  "doc_id": "internal_chat_002",
+  "genre": "internal_chat",
+  "text": "From: Arjun Faketest <arjun.faketest@example.com>\nTo: backend-team@example.com\nSubject: deployment window\n\nAll, the deploy window is locked for 10 PM tonight. If anything blocks, ping me on +1-202-555-0133 directly — I'm working from Delhi timezone.",
+  "labels": [
+    {
+      "text": "Arjun Faketest",
+      "start": 6,
+      "end": 20,
+      "entity_type": "PERSON",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "pseudonymize",
+        "public": "pseudonymize"
+      }
+    },
+    {
+      "text": "arjun.faketest@example.com",
+      "start": 22,
+      "end": 48,
+      "entity_type": "EMAIL_ADDRESS",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "tokenize",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "+1-202-555-0133",
+      "start": 190,
+      "end": 205,
+      "entity_type": "PHONE_NUMBER",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "mask",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "Delhi",
+      "start": 234,
+      "end": 239,
+      "entity_type": "LOCATION",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "keep",
+        "public": "keep"
+      }
+    }
+  ]
+}

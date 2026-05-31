@@ -1,0 +1,6 @@
+{
+  "doc_id": "clean_control_002",
+  "genre": "clean_control",
+  "text": "Data retention policy:\n\nAll customer transaction records are retained for seven years to comply with financial-reporting obligations. After that period, records are archived to cold storage for an additional three years, then deleted. Engineering logs are retained for ninety days. Access patterns to retained data are audited monthly.",
+  "labels": []
+}

@@ -423,3 +423,77 @@ In Phase 5 (when the corpus has 15+ docs), this validator runs in CI. For now, r
 - A 3-doc corpus is enough to validate the format. Don't generate 30 docs until you've confirmed the schema works at 3.
 
 ---
+
+## Day 8 — 2026-05-31
+
+### Corpus scaled to 15 docs across 5 genres
+
+| Genre | Docs | Labels |
+|---|---|---|
+| resume | 3 | 17 |
+| indian_gov_form | 3 | ~19 |
+| customer_support | 3 | ~13 |
+| internal_chat | 3 | ~12 |
+| clean_control | 3 | 0 (false-positive check) |
+| **total** | **15** | **60** |
+
+### First real eval — the numbers
+
+Run: `python eval/run_eval.py` on the 15-doc / 60-label corpus.
+
+| Config | TP | FP | FN | Recall | Precision | F1 |
+|---|---|---|---|---|---|---|
+| presidio_only | 45 | 35 | 15 | 75.00% | 56.25% | 64.29% |
+| regex_only (Aadhaar+PAN) | 6 | 2 | 54 | 10.00% | 75.00% | 17.65% |
+| merged_unreconciled | 51 | 37 | 9 | 85.00% | 57.95% | 68.92% |
+| **merged_reconciled** | **51** | **18** | **9** | **85.00%** | **73.91%** | **79.07%** |
+
+Treatment accuracy on the reconciled pipeline: **100%** across all three profiles (51/51). This is by construction — the matrix that `decide_node` reads is the same matrix the labels are built against. It's a sanity-check metric, not a quality metric.
+
+### Lesson: the reconciler earns its keep — +10 F1 from overlap math alone
+
+`merged_unreconciled → merged_reconciled`:
+
+- TPs unchanged (51 → 51): reconciler doesn't drop real findings.
+- FPs cut nearly in half (37 → 18): URLs inside emails get eaten, Aadhaar regex matching the first 12 digits of credit cards gets dropped, etc.
+- F1 jumps **+10.15 points** (68.92% → 79.07%).
+
+Zero new ML. Pure interval-overlap logic. **This is the headline result for the interview defense of the reconciler design.**
+
+### Lesson: defense-in-depth in numbers
+
+Each detector alone:
+- Presidio alone: 75% recall
+- Regex alone: 10% recall
+
+Merged (no reconcile): 85% recall. That's **+10 points of recall** just from adding the cheap regex layer to Presidio. The detectors are complementary by design — Presidio misses Indian IDs, the regex doesn't know names — and the numbers show it.
+
+### Lesson: 9 FN remaining on merged_reconciled is the Phase 4 motivation
+
+The 9 missed labels (15% miss rate) are almost certainly:
+
+- Indian PERSON entities the English-trained spaCy NER doesn't recognize ("Sneha Testdoc", "Priyanka Faketest", "Anjali Testname" etc.)
+- Possibly Indian city LOCATIONs that spaCy doesn't tag confidently
+
+This is exactly where an LLM extractor (Phase 4) earns its place — context-aware extraction over names and entities that don't match Western training distributions. Adding the LLM should:
+
+- Reduce FN (improve recall)
+- Possibly add some FPs (LLMs hallucinate)
+- Bring per-doc cost up, but selectively (router skips LLM when cheap detectors already agree)
+
+The cost-routing story is exactly the trade we'll measure in Phase 4.
+
+### Numbers I can quote in interview (test-set, defensible)
+
+> "On a 15-doc, 60-label eval corpus, the merged-and-reconciled pipeline hits 85% recall, 74% precision, 79% F1. The reconciler alone is worth +10 F1 points by removing overlapping false positives without dropping any true positives. The 15% recall gap is concentrated on non-Western names spaCy doesn't recognize — that's the motivation for an LLM-extractor layer."
+
+Honest framing: this is a small, synthetic corpus. Real-world numbers will differ. The *relative ordering* of approaches and the *direction* of the wins should transfer.
+
+### What I'd tell future-me (Day 8)
+
+- The first number you measure is the most useful number — even on a tiny corpus, it tells you which way to push.
+- Treatment-accuracy = 100% is a sanity-check, not a brag. Don't quote it as a quality result.
+- "Reconciler +10 F1" is a teachable result. It encodes the entire "do reconciliation properly" argument in one number.
+- The remaining FNs map cleanly to a hypothesis (English NER misses Indian names). Phase 4 will test that hypothesis with a different detector.
+
+---

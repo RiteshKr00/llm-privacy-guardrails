@@ -1,0 +1,73 @@
+{
+  "doc_id": "indian_gov_form_002",
+  "genre": "indian_gov_form",
+  "text": "Form 49A — Application for PAN\n\nFull Name: Ananya Testdata\nFather's Name: Rakesh Testdata\nDate of Birth: 22-March-1985\nMobile: +1-202-555-0156\nEmail (for OTP): ananya.testdata@example.test\n\nExisting PAN (if reapply): ZZZZP9876Y\nCommunication address city: Hyderabad",
+  "labels": [
+    {
+      "text": "Ananya Testdata",
+      "start": 43,
+      "end": 58,
+      "entity_type": "PERSON",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "pseudonymize",
+        "public": "pseudonymize"
+      }
+    },
+    {
+      "text": "Rakesh Testdata",
+      "start": 74,
+      "end": 89,
+      "entity_type": "PERSON",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "pseudonymize",
+        "public": "pseudonymize"
+      }
+    },
+    {
+      "text": "+1-202-555-0156",
+      "start": 127,
+      "end": 142,
+      "entity_type": "PHONE_NUMBER",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "mask",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "ananya.testdata@example.test",
+      "start": 160,
+      "end": 188,
+      "entity_type": "EMAIL_ADDRESS",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "tokenize",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "ZZZZP9876Y",
+      "start": 217,
+      "end": 227,
+      "entity_type": "PAN",
+      "treatments": {
+        "auditor": "mask",
+        "vendor": "redact",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "Hyderabad",
+      "start": 256,
+      "end": 265,
+      "entity_type": "LOCATION",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "keep",
+        "public": "keep"
+      }
+    }
+  ]
+}

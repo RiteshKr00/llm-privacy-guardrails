@@ -1,0 +1,62 @@
+{
+  "doc_id": "customer_support_001",
+  "genre": "customer_support",
+  "text": "Subject: Order #98765 not delivered\n\nHi support,\n\nMy name is Anjali Testname and my order from last week hasn't arrived. The shipping address was 14 Park Lane, Pune. You can reach me at anjali.testname@example.com or call +1-202-555-0167.\n\nThanks,\nAnjali",
+  "labels": [
+    {
+      "text": "Anjali Testname",
+      "start": 61,
+      "end": 76,
+      "entity_type": "PERSON",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "pseudonymize",
+        "public": "pseudonymize"
+      }
+    },
+    {
+      "text": "Park Lane",
+      "start": 149,
+      "end": 158,
+      "entity_type": "LOCATION",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "keep",
+        "public": "keep"
+      }
+    },
+    {
+      "text": "Pune",
+      "start": 160,
+      "end": 164,
+      "entity_type": "LOCATION",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "keep",
+        "public": "keep"
+      }
+    },
+    {
+      "text": "anjali.testname@example.com",
+      "start": 186,
+      "end": 213,
+      "entity_type": "EMAIL_ADDRESS",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "tokenize",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "+1-202-555-0167",
+      "start": 222,
+      "end": 237,
+      "entity_type": "PHONE_NUMBER",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "mask",
+        "public": "redact"
+      }
+    }
+  ]
+}

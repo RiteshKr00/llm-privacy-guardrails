@@ -1,0 +1,84 @@
+{
+  "doc_id": "indian_gov_form_001",
+  "genre": "indian_gov_form",
+  "text": "AADHAAR ENROLMENT / UPDATE FORM\n\nApplicant Name: Vikram Testchan\nFather's Name: Suresh Testchan\nDate of Birth: 15-June-1990\nMobile: +1-202-555-0145\nEmail: vikram.testchan@example.com\n\nExisting Aadhaar (for update): 000012345676\n\nResidential Address:\n  Block A, Test Lane, Mumbai 400001",
+  "labels": [
+    {
+      "text": "Vikram Testchan",
+      "start": 49,
+      "end": 64,
+      "entity_type": "PERSON",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "pseudonymize",
+        "public": "pseudonymize"
+      }
+    },
+    {
+      "text": "Suresh Testchan",
+      "start": 80,
+      "end": 95,
+      "entity_type": "PERSON",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "pseudonymize",
+        "public": "pseudonymize"
+      }
+    },
+    {
+      "text": "+1-202-555-0145",
+      "start": 132,
+      "end": 147,
+      "entity_type": "PHONE_NUMBER",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "mask",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "vikram.testchan@example.com",
+      "start": 155,
+      "end": 182,
+      "entity_type": "EMAIL_ADDRESS",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "tokenize",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "000012345676",
+      "start": 215,
+      "end": 227,
+      "entity_type": "AADHAAR",
+      "treatments": {
+        "auditor": "mask",
+        "vendor": "redact",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "Test Lane",
+      "start": 261,
+      "end": 270,
+      "entity_type": "LOCATION",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "keep",
+        "public": "keep"
+      }
+    },
+    {
+      "text": "Mumbai",
+      "start": 272,
+      "end": 278,
+      "entity_type": "LOCATION",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "keep",
+        "public": "keep"
+      }
+    }
+  ]
+}

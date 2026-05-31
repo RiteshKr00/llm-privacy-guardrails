@@ -1,0 +1,62 @@
+{
+  "doc_id": "internal_chat_003",
+  "genre": "internal_chat",
+  "text": "Daily stand-up — 31 May\n\nPresent: Sneha Testdoc, Rahul Mockname, Priyanka Faketest.\n\nBlockers:\n  - Sneha Testdoc is waiting on infra ticket for the new Mumbai region rollout.",
+  "labels": [
+    {
+      "text": "Sneha Testdoc",
+      "start": 34,
+      "end": 47,
+      "entity_type": "PERSON",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "pseudonymize",
+        "public": "pseudonymize"
+      }
+    },
+    {
+      "text": "Rahul Mockname",
+      "start": 49,
+      "end": 63,
+      "entity_type": "PERSON",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "pseudonymize",
+        "public": "pseudonymize"
+      }
+    },
+    {
+      "text": "Priyanka Faketest",
+      "start": 65,
+      "end": 82,
+      "entity_type": "PERSON",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "pseudonymize",
+        "public": "pseudonymize"
+      }
+    },
+    {
+      "text": "Sneha Testdoc",
+      "start": 99,
+      "end": 112,
+      "entity_type": "PERSON",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "pseudonymize",
+        "public": "pseudonymize"
+      }
+    },
+    {
+      "text": "Mumbai",
+      "start": 152,
+      "end": 158,
+      "entity_type": "LOCATION",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "keep",
+        "public": "keep"
+      }
+    }
+  ]
+}

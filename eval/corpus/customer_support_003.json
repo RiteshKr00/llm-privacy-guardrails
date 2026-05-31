@@ -1,0 +1,62 @@
+{
+  "doc_id": "customer_support_003",
+  "genre": "customer_support",
+  "text": "Call notes — escalation #ESC-2245\n\nCaller: Maya Datacheck\nCallback number: +1-202-555-0119\nEmail on file: maya.datacheck@example.test\nResidence (verified): Bengaluru\n\nIssue: payment failed three times on card ending 4111-1111-1111-1111. Agent agreed to retry once after manual review.",
+  "labels": [
+    {
+      "text": "Maya Datacheck",
+      "start": 43,
+      "end": 57,
+      "entity_type": "PERSON",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "pseudonymize",
+        "public": "pseudonymize"
+      }
+    },
+    {
+      "text": "+1-202-555-0119",
+      "start": 75,
+      "end": 90,
+      "entity_type": "PHONE_NUMBER",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "mask",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "maya.datacheck@example.test",
+      "start": 106,
+      "end": 133,
+      "entity_type": "EMAIL_ADDRESS",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "tokenize",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "Bengaluru",
+      "start": 156,
+      "end": 165,
+      "entity_type": "LOCATION",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "keep",
+        "public": "keep"
+      }
+    },
+    {
+      "text": "4111-1111-1111-1111",
+      "start": 216,
+      "end": 235,
+      "entity_type": "CREDIT_CARD",
+      "treatments": {
+        "auditor": "mask",
+        "vendor": "redact",
+        "public": "redact"
+      }
+    }
+  ]
+}

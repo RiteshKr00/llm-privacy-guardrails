@@ -1,0 +1,6 @@
+{
+  "doc_id": "clean_control_003",
+  "genre": "clean_control",
+  "text": "The Verhoeff checksum algorithm uses two precomputed lookup tables to detect single-digit errors and adjacent-digit swaps in ID numbers. It was designed specifically for human-typed identifiers where these two error classes dominate. Modern uses include several national-ID systems. The algorithm produces a single check digit that, when appended, makes the full sequence sum to zero under the table operations.",
+  "labels": []
+}

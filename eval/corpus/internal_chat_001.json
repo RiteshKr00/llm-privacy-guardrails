@@ -1,0 +1,40 @@
+{
+  "doc_id": "internal_chat_001",
+  "genre": "internal_chat",
+  "text": "@channel reminder — onboarding session today at 3pm. New joiner is Kavya Synthname, reach out at kavya.synthname@example.com if you want to introduce yourself before then. Office is in Gurgaon; she'll be remote first month.",
+  "labels": [
+    {
+      "text": "Kavya Synthname",
+      "start": 67,
+      "end": 82,
+      "entity_type": "PERSON",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "pseudonymize",
+        "public": "pseudonymize"
+      }
+    },
+    {
+      "text": "kavya.synthname@example.com",
+      "start": 97,
+      "end": 124,
+      "entity_type": "EMAIL_ADDRESS",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "tokenize",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "Gurgaon",
+      "start": 185,
+      "end": 192,
+      "entity_type": "LOCATION",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "keep",
+        "public": "keep"
+      }
+    }
+  ]
+}

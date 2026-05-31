@@ -9,7 +9,13 @@ Each builder function returns a dict matching the eval/README.md label schema:
 """
 
 import json
+import sys
 from pathlib import Path
+
+# Make scratch/ importable so we can reuse synthetic_valid_aadhaar.
+# (eval/ doesn't ship those modules; we lean on scratch/ as the source of truth.)
+sys.path.insert(0, str(Path(__file__).parent.parent / "scratch"))
+from india_regex import synthetic_valid_aadhaar  # noqa: E402
 
 
 # Per-entity treatment defaults — used by every builder.
@@ -132,6 +138,222 @@ def build_resume_003():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Indian government form genre — Aadhaar/PAN-heavy, Presidio's blind spot
+# ─────────────────────────────────────────────────────────────────────────────
+
+def build_indian_gov_form_001():
+    """Aadhaar enrollment form."""
+    labels: list = []
+    aadhaar = synthetic_valid_aadhaar("00001234567")
+    text = "AADHAAR ENROLMENT / UPDATE FORM\n\nApplicant Name: "
+    text = _add(text, labels, "Vikram Testchan", "PERSON")
+    text += "\nFather's Name: "
+    text = _add(text, labels, "Suresh Testchan", "PERSON")
+    text += "\nDate of Birth: 15-June-1990\nMobile: "
+    text = _add(text, labels, "+1-202-555-0145", "PHONE_NUMBER")
+    text += "\nEmail: "
+    text = _add(text, labels, "vikram.testchan@example.com", "EMAIL_ADDRESS")
+    text += "\n\nExisting Aadhaar (for update): "
+    text = _add(text, labels, aadhaar, "AADHAAR")
+    text += "\n\nResidential Address:\n  Block A, "
+    text = _add(text, labels, "Test Lane", "LOCATION")
+    text += ", "
+    text = _add(text, labels, "Mumbai", "LOCATION")
+    text += " 400001"
+    return {"doc_id": "indian_gov_form_001", "genre": "indian_gov_form", "text": text, "labels": labels}
+
+
+def build_indian_gov_form_002():
+    """PAN application form."""
+    labels: list = []
+    text = "Form 49A — Application for PAN\n\nFull Name: "
+    text = _add(text, labels, "Ananya Testdata", "PERSON")
+    text += "\nFather's Name: "
+    text = _add(text, labels, "Rakesh Testdata", "PERSON")
+    text += "\nDate of Birth: 22-March-1985\nMobile: "
+    text = _add(text, labels, "+1-202-555-0156", "PHONE_NUMBER")
+    text += "\nEmail (for OTP): "
+    text = _add(text, labels, "ananya.testdata@example.test", "EMAIL_ADDRESS")
+    text += "\n\nExisting PAN (if reapply): "
+    text = _add(text, labels, "ZZZZP9876Y", "PAN")
+    text += "\nCommunication address city: "
+    text = _add(text, labels, "Hyderabad", "LOCATION")
+    return {"doc_id": "indian_gov_form_002", "genre": "indian_gov_form", "text": text, "labels": labels}
+
+
+def build_indian_gov_form_003():
+    """GST registration form — proprietor's IDs."""
+    labels: list = []
+    aadhaar = synthetic_valid_aadhaar("00002345678")
+    text = "GST Registration — Proprietor Details\n\nProprietor Name: "
+    text = _add(text, labels, "Rohan Mocktest", "PERSON")
+    text += "\nProprietor PAN: "
+    text = _add(text, labels, "ZZZZP1122M", "PAN")
+    text += "\nProprietor Aadhaar: "
+    text = _add(text, labels, aadhaar, "AADHAAR")
+    text += "\nMobile: "
+    text = _add(text, labels, "+1-202-555-0188", "PHONE_NUMBER")
+    text += "\nEmail: "
+    text = _add(text, labels, "rohan.mocktest@example.com", "EMAIL_ADDRESS")
+    text += "\nPrincipal Place of Business: "
+    text = _add(text, labels, "Chennai", "LOCATION")
+    return {"doc_id": "indian_gov_form_003", "genre": "indian_gov_form", "text": text, "labels": labels}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Customer support genre — chat/email style, names + emails + phones in prose
+# ─────────────────────────────────────────────────────────────────────────────
+
+def build_customer_support_001():
+    """Inbound email complaint."""
+    labels: list = []
+    text = "Subject: Order #98765 not delivered\n\nHi support,\n\nMy name is "
+    text = _add(text, labels, "Anjali Testname", "PERSON")
+    text += " and my order from last week hasn't arrived. The shipping address was 14 "
+    text = _add(text, labels, "Park Lane", "LOCATION")
+    text += ", "
+    text = _add(text, labels, "Pune", "LOCATION")
+    text += ". You can reach me at "
+    text = _add(text, labels, "anjali.testname@example.com", "EMAIL_ADDRESS")
+    text += " or call "
+    text = _add(text, labels, "+1-202-555-0167", "PHONE_NUMBER")
+    text += ".\n\nThanks,\nAnjali"
+    return {"doc_id": "customer_support_001", "genre": "customer_support", "text": text, "labels": labels}
+
+
+def build_customer_support_002():
+    """Chat transcript — refund request."""
+    labels: list = []
+    text = "[chat] Customer: Hi, I want to request a refund.\n[chat] Agent: Sure, can I get your name and order ID?\n[chat] Customer: I'm "
+    text = _add(text, labels, "John Testchan", "PERSON")
+    text += ", order ID is 555-44-3322. My email is "
+    text = _add(text, labels, "john.testchan@example.com", "EMAIL_ADDRESS")
+    text += ".\n[chat] Agent: Thanks. Refund processed to card on file.\n[chat] Customer: Great, do you have my number too? It's "
+    text = _add(text, labels, "+1-202-555-0102", "PHONE_NUMBER")
+    text += " if you need to text confirmation."
+    return {"doc_id": "customer_support_002", "genre": "customer_support", "text": text, "labels": labels}
+
+
+def build_customer_support_003():
+    """Internal phone-call notes after escalation."""
+    labels: list = []
+    text = "Call notes — escalation #ESC-2245\n\nCaller: "
+    text = _add(text, labels, "Maya Datacheck", "PERSON")
+    text += "\nCallback number: "
+    text = _add(text, labels, "+1-202-555-0119", "PHONE_NUMBER")
+    text += "\nEmail on file: "
+    text = _add(text, labels, "maya.datacheck@example.test", "EMAIL_ADDRESS")
+    text += "\nResidence (verified): "
+    text = _add(text, labels, "Bengaluru", "LOCATION")
+    text += "\n\nIssue: payment failed three times on card ending "
+    text = _add(text, labels, "4111-1111-1111-1111", "CREDIT_CARD")
+    text += ". Agent agreed to retry once after manual review."
+    return {"doc_id": "customer_support_003", "genre": "customer_support", "text": text, "labels": labels}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Internal chat genre — Slack/email casual, mixed PII
+# ─────────────────────────────────────────────────────────────────────────────
+
+def build_internal_chat_001():
+    """Slack-style channel message."""
+    labels: list = []
+    text = "@channel reminder — onboarding session today at 3pm. New joiner is "
+    text = _add(text, labels, "Kavya Synthname", "PERSON")
+    text += ", reach out at "
+    text = _add(text, labels, "kavya.synthname@example.com", "EMAIL_ADDRESS")
+    text += " if you want to introduce yourself before then. Office is in "
+    text = _add(text, labels, "Gurgaon", "LOCATION")
+    text += "; she'll be remote first month."
+    return {"doc_id": "internal_chat_001", "genre": "internal_chat", "text": text, "labels": labels}
+
+
+def build_internal_chat_002():
+    """Forwarded internal email snippet."""
+    labels: list = []
+    text = "From: "
+    text = _add(text, labels, "Arjun Faketest", "PERSON")
+    text += " <"
+    text = _add(text, labels, "arjun.faketest@example.com", "EMAIL_ADDRESS")
+    text += ">\nTo: backend-team@example.com\nSubject: deployment window\n\nAll, the deploy window is locked for 10 PM tonight. If anything blocks, ping me on "
+    text = _add(text, labels, "+1-202-555-0133", "PHONE_NUMBER")
+    text += " directly — I'm working from "
+    text = _add(text, labels, "Delhi", "LOCATION")
+    text += " timezone."
+    return {"doc_id": "internal_chat_002", "genre": "internal_chat", "text": text, "labels": labels}
+
+
+def build_internal_chat_003():
+    """Stand-up notes — names in passing."""
+    labels: list = []
+    text = "Daily stand-up — 31 May\n\nPresent: "
+    text = _add(text, labels, "Sneha Testdoc", "PERSON")
+    text += ", "
+    text = _add(text, labels, "Rahul Mockname", "PERSON")
+    text += ", "
+    text = _add(text, labels, "Priyanka Faketest", "PERSON")
+    text += ".\n\nBlockers:\n  - "
+    text = _add(text, labels, "Sneha Testdoc", "PERSON")
+    text += " is waiting on infra ticket for the new "
+    text = _add(text, labels, "Mumbai", "LOCATION")
+    text += " region rollout."
+    return {"doc_id": "internal_chat_003", "genre": "internal_chat", "text": text, "labels": labels}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Clean control genre — NO PII. Tests for false positives.
+# `labels` is intentionally empty.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def build_clean_control_001():
+    """Marketing copy for a generic product page."""
+    return {
+        "doc_id": "clean_control_001",
+        "genre": "clean_control",
+        "text": (
+            "Introducing our latest privacy-first analytics platform. Designed for "
+            "engineering teams that need observability without compromising data "
+            "sovereignty. Easy to deploy on-premises or in any cloud. Compatible "
+            "with existing log aggregation pipelines. Pricing starts at the basic tier."
+        ),
+        "labels": [],
+    }
+
+
+def build_clean_control_002():
+    """Internal policy text — describes policies, names no individuals."""
+    return {
+        "doc_id": "clean_control_002",
+        "genre": "clean_control",
+        "text": (
+            "Data retention policy:\n\nAll customer transaction records are retained "
+            "for seven years to comply with financial-reporting obligations. After "
+            "that period, records are archived to cold storage for an additional "
+            "three years, then deleted. Engineering logs are retained for ninety "
+            "days. Access patterns to retained data are audited monthly."
+        ),
+        "labels": [],
+    }
+
+
+def build_clean_control_003():
+    """General technical article — no individual identifiers."""
+    return {
+        "doc_id": "clean_control_003",
+        "genre": "clean_control",
+        "text": (
+            "The Verhoeff checksum algorithm uses two precomputed lookup tables "
+            "to detect single-digit errors and adjacent-digit swaps in ID numbers. "
+            "It was designed specifically for human-typed identifiers where these "
+            "two error classes dominate. Modern uses include several national-ID "
+            "systems. The algorithm produces a single check digit that, when "
+            "appended, makes the full sequence sum to zero under the table operations."
+        ),
+        "labels": [],
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Main — write each builder's output as JSON in eval/corpus/
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -139,12 +361,26 @@ if __name__ == "__main__":
     out_dir = Path(__file__).parent / "corpus"
     out_dir.mkdir(exist_ok=True)
 
-    builders = [build_resume_001, build_resume_002, build_resume_003]
+    builders = [
+        # resumes (Day 7)
+        build_resume_001, build_resume_002, build_resume_003,
+        # indian gov forms
+        build_indian_gov_form_001, build_indian_gov_form_002, build_indian_gov_form_003,
+        # customer support
+        build_customer_support_001, build_customer_support_002, build_customer_support_003,
+        # internal chat
+        build_internal_chat_001, build_internal_chat_002, build_internal_chat_003,
+        # clean control (no PII)
+        build_clean_control_001, build_clean_control_002, build_clean_control_003,
+    ]
 
+    total_labels = 0
     for builder in builders:
         doc = builder()
         path = out_dir / f"{doc['doc_id']}.json"
         path.write_text(json.dumps(doc, indent=2, ensure_ascii=False), encoding="utf-8")
+        total_labels += len(doc["labels"])
         print(f"Wrote {path.name}  ({len(doc['labels'])} labels)")
 
-    print(f"\nDone. Run `python eval\\validate_corpus.py` to verify offsets.")
+    print(f"\nDone. {len(builders)} docs, {total_labels} labels total.")
+    print(f"Run `python eval\\validate_corpus.py` to verify offsets.")

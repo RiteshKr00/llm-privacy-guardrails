@@ -1,0 +1,73 @@
+{
+  "doc_id": "indian_gov_form_003",
+  "genre": "indian_gov_form",
+  "text": "GST Registration — Proprietor Details\n\nProprietor Name: Rohan Mocktest\nProprietor PAN: ZZZZP1122M\nProprietor Aadhaar: 000023456782\nMobile: +1-202-555-0188\nEmail: rohan.mocktest@example.com\nPrincipal Place of Business: Chennai",
+  "labels": [
+    {
+      "text": "Rohan Mocktest",
+      "start": 56,
+      "end": 70,
+      "entity_type": "PERSON",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "pseudonymize",
+        "public": "pseudonymize"
+      }
+    },
+    {
+      "text": "ZZZZP1122M",
+      "start": 87,
+      "end": 97,
+      "entity_type": "PAN",
+      "treatments": {
+        "auditor": "mask",
+        "vendor": "redact",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "000023456782",
+      "start": 118,
+      "end": 130,
+      "entity_type": "AADHAAR",
+      "treatments": {
+        "auditor": "mask",
+        "vendor": "redact",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "+1-202-555-0188",
+      "start": 139,
+      "end": 154,
+      "entity_type": "PHONE_NUMBER",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "mask",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "rohan.mocktest@example.com",
+      "start": 162,
+      "end": 188,
+      "entity_type": "EMAIL_ADDRESS",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "tokenize",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "Chennai",
+      "start": 218,
+      "end": 225,
+      "entity_type": "LOCATION",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "keep",
+        "public": "keep"
+      }
+    }
+  ]
+}

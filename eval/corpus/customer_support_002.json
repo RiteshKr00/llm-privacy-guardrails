@@ -1,0 +1,40 @@
+{
+  "doc_id": "customer_support_002",
+  "genre": "customer_support",
+  "text": "[chat] Customer: Hi, I want to request a refund.\n[chat] Agent: Sure, can I get your name and order ID?\n[chat] Customer: I'm John Testchan, order ID is 555-44-3322. My email is john.testchan@example.com.\n[chat] Agent: Thanks. Refund processed to card on file.\n[chat] Customer: Great, do you have my number too? It's +1-202-555-0102 if you need to text confirmation.",
+  "labels": [
+    {
+      "text": "John Testchan",
+      "start": 124,
+      "end": 137,
+      "entity_type": "PERSON",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "pseudonymize",
+        "public": "pseudonymize"
+      }
+    },
+    {
+      "text": "john.testchan@example.com",
+      "start": 176,
+      "end": 201,
+      "entity_type": "EMAIL_ADDRESS",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "tokenize",
+        "public": "redact"
+      }
+    },
+    {
+      "text": "+1-202-555-0102",
+      "start": 315,
+      "end": 330,
+      "entity_type": "PHONE_NUMBER",
+      "treatments": {
+        "auditor": "keep",
+        "vendor": "mask",
+        "public": "redact"
+      }
+    }
+  ]
+}
