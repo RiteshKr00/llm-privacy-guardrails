@@ -24,6 +24,9 @@ ollama pull llama3.2:3b
 
 ## Demo
 
+![LLM Privacy Guardrails UI](assets/demo.jpeg)
+![LLM Privacy Guardrails UI - Second View](assets/demo2.jpeg)
+
 ```powershell
 python demo.py
 ```
