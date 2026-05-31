@@ -14,19 +14,14 @@ Plus: treatment accuracy per recipient profile, on the reconciled pipeline.
 """
 
 import json
-import sys
 from collections import defaultdict
 from pathlib import Path
 
-# Make scratch/ importable.
-sys.path.insert(0, str(Path(__file__).parent.parent / "scratch"))
-
-from finding import Finding
-from india_regex import scan_aadhaar, scan_pan
-from llm_extractor import scan_with_llm
-from presidio_wrapper import scan_with_presidio
-from reconcile import reconcile
-from treatment import TREATMENT_MATRIX, DEFAULT_TREATMENT
+from llm_privacy_guardrails import Finding, TREATMENT_MATRIX, DEFAULT_TREATMENT
+from llm_privacy_guardrails.detectors import (
+    scan_aadhaar, scan_pan, scan_with_llm, scan_with_presidio,
+)
+from llm_privacy_guardrails.reconcile import reconcile
 
 
 # ─────────────────────────────────────────────────────────────────────────────

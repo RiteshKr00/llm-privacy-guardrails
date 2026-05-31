@@ -9,9 +9,7 @@ are discarded. Future versions could merge agreeing findings into a single
 boosted-confidence finding, but for now we keep it simple.
 """
 
-from finding import Finding
-from india_regex import scan_aadhaar, scan_pan
-from presidio_wrapper import scan_with_presidio
+from .finding import Finding
 
 
 def _overlaps(a: Finding, b: Finding) -> bool:
@@ -66,39 +64,3 @@ def reconcile(findings: list[Finding]) -> list[Finding]:
     return keep
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Demo — run all three detectors, then reconcile, and compare before/after.
-# ─────────────────────────────────────────────────────────────────────────────
-
-if __name__ == "__main__":
-    sample_text = """
-Customer record:
-  Name: Aarav Verhoeff
-  Email: aarav.verhoeff@example.com
-  Phone: +1-202-555-0123
-  Aadhaar: 0000 1234 5676
-  PAN (Individual): ABCPK1234L
-  Address: 42 Fictional Maple Street, Springfield
-  Credit card: 4111-1111-1111-1111
-"""
-
-    # Run all three detectors and concatenate
-    print("Running all three detectors...\n")
-    all_findings = (
-        scan_with_presidio(sample_text)
-        + scan_aadhaar(sample_text)
-        + scan_pan(sample_text)
-    )
-
-    print(f"=== BEFORE reconciliation: {len(all_findings)} findings ===\n")
-    for f in sorted(all_findings, key=lambda f: f.start):
-        print(f"  {f.entity_type:<15}  '{f.text:<32}'  conf={f.confidence:.2f}  "
-              f"offsets=({f.start:4d}, {f.end:4d})  detector={f.detector}")
-
-    # Reconcile
-    deduped = reconcile(all_findings)
-
-    print(f"\n=== AFTER reconciliation: {len(deduped)} findings ===\n")
-    for f in sorted(deduped, key=lambda f: f.start):
-        print(f"  {f.entity_type:<15}  '{f.text:<32}'  conf={f.confidence:.2f}  "
-              f"offsets=({f.start:4d}, {f.end:4d})  detector={f.detector}")

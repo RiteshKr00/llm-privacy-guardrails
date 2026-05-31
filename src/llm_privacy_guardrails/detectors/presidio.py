@@ -14,7 +14,7 @@ from functools import lru_cache
 
 from presidio_analyzer import AnalyzerEngine
 
-from finding import Finding
+from ..finding import Finding
 
 
 @lru_cache(maxsize=1)
@@ -56,24 +56,3 @@ def scan_with_presidio(text: str) -> list[Finding]:
     return findings
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Demo — run this file directly to see it work.
-# ─────────────────────────────────────────────────────────────────────────────
-
-if __name__ == "__main__":
-    sample_text = """
-Customer record:
-  Name: Aarav Verhoeff
-  Email: aarav.verhoeff@example.com
-  Phone: +1-202-555-0123
-  Address: 42 Fictional Maple Street, Springfield
-  Credit card: 4111-1111-1111-1111
-"""
-
-    print("Loading Presidio (first call loads spaCy — takes ~5s)...\n")
-    findings = scan_with_presidio(sample_text)
-
-    print(f"Found {len(findings)} findings:\n")
-    for f in findings:
-        print(f"  {f.entity_type:<15}  '{f.text:<32}'  conf={f.confidence:.2f}  "
-              f"offsets=({f.start:4d}, {f.end:4d})  detector={f.detector}")

@@ -16,8 +16,8 @@ reconciler in a tie. Tune later based on eval results.
 
 from pydantic import BaseModel, Field
 
-from finding import Finding
-from llm_factory import get_llm
+from ..finding import Finding
+from ..llm_factory import get_llm
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -122,25 +122,3 @@ def scan_with_llm(text: str) -> list[Finding]:
     return findings
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Demo — run on one corpus doc to see what the 3b model produces
-# ─────────────────────────────────────────────────────────────────────────────
-
-if __name__ == "__main__":
-    sample_text = """
-Customer record:
-  Name: Aarav Verhoeff
-  Email: aarav.verhoeff@example.com
-  Phone: +1-202-555-0123
-  Aadhaar: 0000 1234 5676
-  PAN (Individual): ABCPK1234L
-  Address: 42 Fictional Maple Street, Springfield
-  Credit card: 4111-1111-1111-1111
-"""
-
-    print("Calling LLM extractor (first call may take 10-30 seconds)...\n")
-    findings = scan_with_llm(sample_text)
-
-    print(f"LLM returned {len(findings)} findings (after offset verification):\n")
-    for f in sorted(findings, key=lambda f: f.start):
-        print(f"  {f.entity_type:<15}  '{f.text:<32}'  offsets=({f.start:4d}, {f.end:4d})")

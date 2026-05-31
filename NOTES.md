@@ -654,3 +654,70 @@ For local Ollama (free), the routing is mostly hygiene. For paid Gemini / OpenAI
 - When routing logic and downstream logic disagree about which findings matter, you have a bug. Make consistency the design rule.
 
 ---
+
+## Day 13 — 2026-05-31 — Phase 5: refactor to src/ package
+
+### From scratch/ to a proper Python package
+
+Repository structure went from a flat `scratch/` to:
+
+```
+src/llm_privacy_guardrails/
+  __init__.py           — public API: build_graph, AgentState, Finding, Treatment, TREATMENT_MATRIX
+  finding.py
+  treatment.py
+  reconcile.py
+  routing.py            — extracted from 12_routed_agent.py
+  agent.py              — extracted from 12_routed_agent.py (state + handlers + nodes + build_graph)
+  llm_factory.py
+  detectors/
+    __init__.py
+    presidio.py         — was presidio_wrapper.py
+    india_regex.py
+    llm.py              — was llm_extractor.py
+```
+
+Plus `pyproject.toml` (hatchling), `demo.py` at repo root, and `README.md`.
+
+Old `scratch/` files deleted — git log + NOTES.md preserve the engineering history. Per-day historical artifacts have no remaining value once the package shape stabilizes.
+
+### Lesson: refactor = "same output, different shape" — verify behavior unchanged
+
+Two boring-but-load-bearing checks after the moves:
+
+- `python demo.py` produces output byte-for-byte identical to Day 12's `12_routed_agent.py` demo.
+- `python eval/validate_corpus.py` still passes on all 15 docs / 60 labels.
+
+If either had changed, the refactor would have introduced unintended logic. Same principle as Day 4 (single-node graph wraps the deterministic pipeline) — *structural changes must preserve behavior before adding new behavior*.
+
+### Lesson: a hatchling-built editable install requires every file the metadata mentions
+
+Hit a friction on `pip install -e .`: hatchling errored because `pyproject.toml` declared `readme = "README.md"` but the file didn't yet exist. Trivial fix (write a minimal README), but a useful reminder: **declarative metadata is contracts the build tooling enforces**. If you declare a README, license file, version-source file — that file must exist at build time.
+
+### Public API surface (the import contract going forward)
+
+```python
+from llm_privacy_guardrails import (
+    build_graph,         # → compiled LangGraph runnable
+    AgentState,          # TypedDict for invoke()
+    Finding, Treatment,  # core data types
+    TREATMENT_MATRIX,    # config (entity_type × profile → action)
+)
+
+# Internals available but stable-ish:
+from llm_privacy_guardrails.detectors import (
+    scan_with_presidio, scan_aadhaar, scan_pan, scan_with_llm,
+)
+from llm_privacy_guardrails.reconcile import reconcile
+```
+
+Anyone using the package — including the eval harness in `eval/run_eval.py` — goes through these. No more `sys.path` hacks; no more leading-digit module-name workarounds.
+
+### What I'd tell future-me (Day 13)
+
+- A flat scratch/ folder is the right shape WHILE building (cheap to iterate). Once the design stabilizes, refactor or your imports become brittle.
+- `git mv` (not delete + add) preserves history. Future-you will want `git log --follow` to work on every file.
+- README.md exists for humans AND for the build tool. Write at least a placeholder before declaring it in metadata.
+- Test the demo end-to-end as the FIRST step after a refactor. If `python demo.py` works, the package shape is right. Everything else (lint, type check, full eval) is secondary verification.
+
+---

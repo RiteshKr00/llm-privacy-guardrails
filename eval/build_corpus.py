@@ -9,13 +9,9 @@ Each builder function returns a dict matching the eval/README.md label schema:
 """
 
 import json
-import sys
 from pathlib import Path
 
-# Make scratch/ importable so we can reuse synthetic_valid_aadhaar.
-# (eval/ doesn't ship those modules; we lean on scratch/ as the source of truth.)
-sys.path.insert(0, str(Path(__file__).parent.parent / "scratch"))
-from india_regex import synthetic_valid_aadhaar  # noqa: E402
+from llm_privacy_guardrails.detectors.india_regex import synthetic_valid_aadhaar
 
 
 # Per-entity treatment defaults — used by every builder.

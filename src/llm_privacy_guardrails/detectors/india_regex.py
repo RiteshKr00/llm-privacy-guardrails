@@ -12,7 +12,7 @@ treat them uniformly.
 
 import re
 
-from finding import Finding
+from ..finding import Finding
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Verhoeff algorithm — standard implementation, treat as a black box.
@@ -162,38 +162,3 @@ def scan_pan(text: str) -> list[Finding]:
     return findings
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Demo — run this file directly to see it work.
-# ─────────────────────────────────────────────────────────────────────────────
-
-if __name__ == "__main__":
-    valid_a = synthetic_valid_aadhaar()
-    print(f"Generated valid synthetic Aadhaar: {valid_a}\n")
-
-    sample_text = f"""
-Customer record:
-  Name: Aarav Verhoeff
-  Aadhaar (clean): {valid_a}
-  Aadhaar (spaced): {valid_a[:4]} {valid_a[4:8]} {valid_a[8:]}
-  Aadhaar (dashed): {valid_a[:4]}-{valid_a[4:8]}-{valid_a[8:]}
-  Random 12-digit (should be INVALID): 987654321012
-  Phone: +1-202-555-0123
-  Order #98765432101 (only 11 digits, should NOT match at all)
-  PAN (Individual): ABCPK1234L
-  PAN (Company): XYZCY9876Z
-  PAN (invalid 4th char): ABCXK1234L
-  PAN (wrong length): ABCPK1234
-  PAN (lowercase): abcpk1234l
-"""
-
-    results = scan_aadhaar(sample_text)
-    print(f"Found {len(results)} Aadhaar-shaped candidates:\n")
-    for r in results:
-        status = "VALID  " if r.validated else "INVALID"
-        print(f"  {status}  '{r.text:<18}'  offsets=({r.start:4d}, {r.end:4d})  conf={r.confidence}")
-
-    pan_results = scan_pan(sample_text)
-    print(f"\nFound {len(pan_results)} PAN-shaped candidates:\n")
-    for r in pan_results:
-        status = "VALID  " if r.validated else "INVALID"
-        print(f"  {status}  '{r.text:<18}'  offsets=({r.start:4d}, {r.end:4d})  conf={r.confidence}")
