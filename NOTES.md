@@ -598,3 +598,59 @@ Not urgent. Recall is still 96.67% overall. Note for the v1 polish phase.
 - Cross-detector reconciliation with simple "wins-by-confidence" leaves recall on the table when a lower-confidence detector has the better span. Same-type-prefer-longer-span is the v1 polish fix.
 
 ---
+
+## Day 12 — 2026-05-31
+
+### Cost-routing wired into the agent
+
+`scratch/12_routed_agent.py`: same three-node graph (detect / decide / apply) as Day 6, but `detect_node` now decides whether to call the LLM based on the cheap detectors' output.
+
+The routing rule (v1, conservative by design):
+
+```python
+def should_call_llm(text, cheap_findings) -> bool:
+    matrix_relevant = [f for f in cheap_findings if f.entity_type in TREATMENT_MATRIX]
+    if matrix_relevant:                     # cheap found PII we care about → call LLM (more recall possible)
+        return True
+    if any(marker in text for marker in PII_SYNTAX_MARKERS):
+        return True                         # cheap found nothing but doc has PII syntax → call LLM
+    return False                            # cheap found nothing AND no markers → safe to skip
+```
+
+Plus a new state field `llm_called: bool` so audit / monitoring downstream can see whether the LLM was consulted.
+
+### Bug discovered AND fixed: agent was silently redacting non-PII
+
+Demo on a generic policy doc:
+> "...customer records are kept for seven years to comply..."
+
+Output: `"...customer records are kept for [REDACTED] to comply..."`
+
+**Why:** Presidio fired on `DATE_TIME` for "seven years". Our matrix has no policy for `DATE_TIME`. `decide_node` fell through to `DEFAULT_TREATMENT = "redact"`. `apply_node` redacted it. Silent — no warning, no exception, just disappearing words.
+
+**Fix:** filter `findings` to `entity_type in TREATMENT_MATRIX` at the end of `detect_node`. The agent only acts on types it has explicit policy for. Anything Presidio reports outside the matrix is dropped *before* it reaches decide.
+
+### Lesson: matrix is the agent's source of truth — filter at the boundary
+
+The routing rule already filtered cheap findings to matrix-relevant types when deciding whether to escalate. But the downstream pipeline (decide / apply) had no such filter. The mismatch produced the bug.
+
+The fix is the right pattern: **decide what the agent cares about once, at the detection boundary, and let that filter define the rest of the pipeline.** Anywhere else where the matrix gets consulted (decide, apply, audit) inherits the filter automatically. New entity type means one matrix row, not edge-case logic scattered across nodes.
+
+### Lesson: demos with non-PII content are bug-finders
+
+If the demo had only used PII-rich documents (resumes, gov forms), this bug would have shipped silently — the DATE_TIME finding in a resume would have been overwhelmed by the actual PII findings, and "seven years" would have been a buried side effect. **The clean-control marketing/policy documents I added to the eval corpus were what made the bug visible** — same docs as `clean_control_001/002/003` in `eval/corpus/`.
+
+This is why control documents matter in any test corpus, not just the "positive" cases.
+
+### Routing impact
+
+For local Ollama (free), the routing is mostly hygiene. For paid Gemini / OpenAI via `LLM_PROVIDER=gemini`, the same routing reduces LLM calls on docs that don't need them — on the 15-doc corpus, the 3 clean_control docs (20%) get the skip path. Practical cost reduction with zero recall impact (clean docs have no PII to miss).
+
+### What I'd tell future-me (Day 12)
+
+- A privacy guardrail that operates on entity types the matrix doesn't recognize is broken in a quiet way. Filter at the detection boundary.
+- Cost-routing for paid LLMs is a "v1 polish" feature when on local LLM. The architecture matters more than the savings at this stage.
+- Control documents in eval corpora aren't there for the FP count alone — they're bug-discovery instruments.
+- When routing logic and downstream logic disagree about which findings matter, you have a bug. Make consistency the design rule.
+
+---
