@@ -302,3 +302,82 @@ This separation matters: the decision logic is testable in isolation (assert "PE
 - A safe-by-default fallback (unknown → redact) is non-negotiable. The cost of over-redaction is a noisy output; the cost of under-redaction is a leak.
 
 ---
+
+## Day 6 — 2026-05-31
+
+### Three-node agent: detect → decide → apply
+
+`apply_node` takes the Treatments from `decide` and rewrites the document text. Six action handlers wired up via a dispatch dict:
+
+| Action | v1 implementation |
+|---|---|
+| `keep` | return source unchanged |
+| `redact` | `[REDACTED]` |
+| `mask` | last 4 chars visible, rest `*` |
+| `pseudonymize` | `Person_<first 4 hex of sha256>` — deterministic |
+| `tokenize` | `tok_<first 8 hex of sha256>` — deterministic; real vault lookup is Phase 5 |
+| `generalize` | `[<TYPE>_GENERALIZED]` — placeholder; real impl needs per-type ranges (DOB → age decade, salary → band) |
+
+Unknown actions fall back to `redact` — same fail-safe principle as the decide step.
+
+### Lesson: tail-first replacement is critical AND silent
+
+Sort treatments by `offset_start` DESCENDING, apply from the end of the document backwards. Without this, every variable-length replacement shifts all subsequent offsets, and the second/third/fourth replacements land at wrong characters.
+
+The good outcome of getting this right is **boring**: clean output, no surprises. The bad outcome of getting it wrong is **subtle and silent**: text fragments interleaved with the wrong replacements, and no exception thrown.
+
+**Three months from now, if anyone changes the loop order, this will quietly break.** The comment in the code (`# CRITICAL: sort by offset_start DESCENDING`) is the only thing protecting against the regression. Worth a unit test in Phase 5 that asserts:
+
+- Two adjacent findings get morphed correctly
+- A short replacement next to a long one doesn't corrupt either
+
+### Lesson: deterministic pseudonymization is what makes the vendor profile useful
+
+`Person_<sha256[:4]>` means the same input always produces the same output. `Aarav Verhoeff` → `Person_6a33` in every run, every document, forever (until the hash function changes).
+
+**This property is load-bearing for the vendor use case.** A vendor doing analytics on the morphed data needs to see that `Person_6a33` appears in 100 documents and infer relationship structure — *without* learning the identity. Random pseudonyms would destroy that analytical utility.
+
+(The downside: deterministic pseudonyms are vulnerable to **frequency-analysis attacks** when an attacker has external data. If `Person_6a33` appears 1000 times and only one CEO name appears 1000 times in your public hiring announcements, the mapping is recoverable. Acknowledge this — true anonymization needs k-anonymity or differential privacy. Pseudonymization is *not* anonymization.)
+
+### Lesson: V1 limitations to acknowledge explicitly
+
+- **LOCATION is `keep` everywhere.** Street-level redaction is future work. In the morphed output, `42 Fictional Maple Street, Springfield` stays intact across all three profiles.
+- **`generalize` is a placeholder.** Real implementations need entity-specific ranges. Worth saying "v1 ships with 5 working actions + 1 placeholder" rather than overclaiming six.
+- **Pseudonym collisions possible at scale.** 4 hex chars = 65,536 possible pseudonyms. A document with more than ~256 distinct PERSON entities is at risk of birthday-paradox collisions. Adequate for v1 demo docs (<10 names); future work for production.
+- **No vault yet.** Tokens are computed hashes, not vault-stored. Phase 5 adds the real vault with reversibility under authorization.
+
+### State now has 5 fields
+
+| Field | Set by |
+|---|---|
+| `document_text` | input (graph caller) |
+| `recipient_profile` | input (graph caller) |
+| `findings` | `detect_node` |
+| `treatments` | `decide_node` |
+| `morphed_text` | `apply_node` |
+
+Each node touches a different slice. The state grows monotonically; no node mutates what another wrote.
+
+### Milestone: Phase 2 complete
+
+Looking at the 6-phase plan:
+
+| Phase | Status |
+|---|---|
+| 1. Deterministic baseline | ✅ Days 1–3 |
+| 2. First agent (LangGraph) | ✅ Days 4–6 |
+| 3. Measure (eval corpus) | next |
+| 4. LLM where eval says yes | pending |
+| 5. Ship V1 | pending |
+| 6. V2 stretch | pending |
+
+End-to-end: input doc → detection → reconciliation → decision → application → morphed doc. Working. With three demoable profiles. That's the spine of the system.
+
+### What I'd tell future-me (Day 6)
+
+- Tail-first replacement is the kind of bug that doesn't throw — it silently corrupts. Add a comment, add a test, move on.
+- Deterministic pseudonymization is a feature, not a shortcut. Don't replace it with random pseudonyms "for security" without understanding what you'd lose.
+- Pseudonymization ≠ anonymization. Be honest about this. K-anonymity / differential privacy are different tools for different problems.
+- Three working profiles are enough for v1. Adding a fourth is a 10-minute matrix edit; adding the fifth action handler is more interesting and only happens when the matrix demands it.
+
+---
