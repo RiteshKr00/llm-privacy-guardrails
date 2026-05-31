@@ -133,3 +133,80 @@ Both `scan_aadhaar` and `scan_pan` return `list[dict]` with the same keys: `{mat
 - Pre-deciding the output shape across heterogeneous detectors costs nothing and saves hours later.
 
 ---
+
+## Day 3 — 2026-05-31
+
+### Unified `Finding` dataclass
+
+Introduced `scratch/finding.py`:
+
+```python
+@dataclass(frozen=True)
+class Finding:
+    text: str
+    start: int
+    end: int
+    entity_type: str
+    detector: str
+    confidence: float
+    validated: bool
+```
+
+`frozen=True` makes instances immutable — the reconciler can't accidentally mutate a finding; if it needs different values it creates a new one. Frozen also enables hashing if we ever put Findings in sets.
+
+### Refactored detectors to emit `Finding` (not `dict`)
+
+`scan_aadhaar` and `scan_pan` in `india_regex.py` now return `list[Finding]`. `presidio_wrapper.scan_with_presidio` does the same for Presidio's `AnalyzerEngine`. All three detectors now speak the same shape — the precondition for a reconciler that doesn't care which source produced what.
+
+Confidence scheme by detector:
+
+| Detector | Validated case | Failed validator |
+|---|---|---|
+| Presidio | `r.score` (its own confidence) | n/a (no second-stage validator → always `validated=True`) |
+| Aadhaar regex | 1.0 | 0.5 (kept, low-confidence) |
+| PAN regex | 1.0 | 0.4 (kept, lower than Aadhaar — format is tighter, failures more suspicious) |
+
+### The reconciler — algorithm
+
+`scratch/03_reconcile.py` implements simple **wins-by-confidence**:
+
+1. Sort findings by `(start ASC, confidence DESC)`. Ties on start go to highest-confidence first.
+2. For each finding `f`:
+   - Find all already-kept findings that overlap with `f` (using `_overlaps()` — standard interval-overlap formula: `a.start < b.end AND b.start < a.end`).
+   - No overlaps → keep `f`.
+   - `f` strictly higher than every overlapping → kick them out, keep `f`.
+   - Otherwise → drop `f` silently.
+
+V1 doesn't *merge* agreeing findings into a confidence-boosted single finding (e.g., if two detectors flag the same AADHAAR span at the same offsets, the higher one wins instead of the agreement boosting confidence). That's a v2 enhancement.
+
+### Lesson: detector collisions are real, and reconciliation catches them
+
+Sample text contained `4111-1111-1111-1111` (a test Visa). Presidio detected `CREDIT_CARD` at offsets `(224, 243)` conf=1.00. **My Aadhaar regex *also* matched** — the first 12 digits of the card, `4111-1111-1111`, at offsets `(224, 238)` conf=0.50 (Verhoeff failed, so low-confidence).
+
+Same characters claimed by two detectors as different entities. Reconciler kicked out the Aadhaar candidate because CREDIT_CARD's confidence was strictly higher. **Without the reconciler, the system would have produced two overlapping findings of incompatible types — the downstream audit would have looked confused.**
+
+This is the canonical case for *why* defense-in-depth needs reconciliation, not just OR-ing.
+
+### Lesson: NER results depend on context, not just the name string
+
+Day 1: my sample text had "Aarav Verhoeff" buried in a paragraph. Presidio caught only "Aarav" (5 chars, just the first name).
+
+Day 3: the demo sample had "Name: Aarav Verhoeff" — the `Name:` prefix is a strong NER signal. Same name; Presidio caught the FULL "Aarav Verhoeff" entity (14 chars).
+
+**Implication:** evals using sterile "PII in a vacuum" docs may *over-report* NER recall. Real-world recall depends on whether the surrounding text gives the model contextual cues. For our eval corpus, include both well-cued docs (forms with `Name:` labels) and uncued docs (free-form text) to stress this.
+
+### Lesson: URL recognizer inside EMAIL recognizer is a deduplication problem, not a detection problem
+
+Presidio's URL recognizer fires on substrings inside emails — `aarav.ve` and `example.com` both got flagged inside `aarav.verhoeff@example.com`. That's two URL findings at conf=0.50 fully contained inside an EMAIL_ADDRESS finding at conf=1.00. The reconciler eats them.
+
+The lesson: don't try to suppress Presidio's noisy sub-recognizers at the detection layer (you'd lose useful signal in other contexts). Let the reconciler handle it. **Separate detection from deduplication.**
+
+### What I'd tell future-me (Day 3)
+
+- A frozen dataclass is the right shape for findings — small, immutable, free repr, free comparison.
+- A shared output shape across detectors makes the reconciler one function instead of three conditional branches.
+- Cross-detector collisions are real (Aadhaar regex vs CREDIT_CARD). Don't try to prevent them at the detector layer — handle them at the reconciler.
+- The reconciler's "wins-by-confidence" rule is enough for v1. Cross-detector agreement → confidence boost is a v2 idea, not a v1 necessity.
+- NER recall is context-dependent. Evals should stress this with mixed cued/uncued documents.
+
+---

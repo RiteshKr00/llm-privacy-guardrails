@@ -12,6 +12,7 @@ treat them uniformly.
 
 import re
 
+from finding import Finding
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Verhoeff algorithm — standard implementation, treat as a black box.
@@ -80,26 +81,28 @@ def synthetic_valid_aadhaar(prefix_11: str = "00001234567") -> str:
 AADHAAR_RE = re.compile(r"\b(\d{4}[\s-]?\d{4}[\s-]?\d{4})\b")
 
 
-def scan_aadhaar(text: str) -> list[dict]:
+def scan_aadhaar(text: str) -> list[Finding]:
     """Find Aadhaar candidates in `text` and validate each with Verhoeff.
 
-    Returns one dict per candidate with: match (raw matched text), start/end
-    offsets into `text`, and `valid` (the Verhoeff result).
-
-    Note we keep BOTH valid and invalid candidates in the output — invalid
-    means 'looks like an Aadhaar but isn't one'. Downstream code can decide
-    what to do (flag as low-confidence, ignore, audit, etc.).
+    Returns one Finding per candidate. Verhoeff-valid candidates get confidence
+    1.0; shape-matched-but-checksum-failed candidates get 0.5. We keep both —
+    over-flagging is safer than under-flagging for PII detection. Downstream
+    (reconciler, treatment) can decide what to do with low-confidence findings.
     """
-    findings = []
+    findings: list[Finding] = []
     for m in AADHAAR_RE.finditer(text):
         raw = m.group(1)
         digits_only = re.sub(r"[\s-]", "", raw)
-        findings.append({
-            "match": raw,
-            "start": m.start(),
-            "end": m.end(),
-            "valid": verhoeff_valid(digits_only),
-        })
+        validated = verhoeff_valid(digits_only)
+        findings.append(Finding(
+            text=raw,
+            start=m.start(),
+            end=m.end(),
+            entity_type="AADHAAR",
+            detector="regex_india",
+            confidence=1.0 if validated else 0.5,
+            validated=validated,
+        ))
     return findings
 
 
@@ -135,24 +138,27 @@ def pan_format_valid(candidate: str) -> bool:
     return candidate[3] in PAN_ENTITY_TYPES
 
 
-def scan_pan(text: str) -> list[dict]:
+def scan_pan(text: str) -> list[Finding]:
     """Find PAN candidates in `text` and validate the position-4 entity-type code.
 
-    Returns one dict per candidate with the SAME shape as scan_aadhaar's output:
-        {"match": str, "start": int, "end": int, "valid": bool}
-
-    Keeping the shape identical means downstream code (the future reconciler)
-    can treat Aadhaar and PAN findings uniformly.
+    Returns one Finding per candidate. Format-valid candidates get confidence
+    1.0; candidates with an unrecognized position-4 code get 0.4 — lower than
+    Aadhaar's 'invalid' tier because PAN's format is tighter, so a position-4
+    failure is more clearly suspicious.
     """
-    findings: list[dict] = []
+    findings: list[Finding] = []
     for m in PAN_RE.finditer(text):
         raw = m.group(1)
-        findings.append({
-            "match": raw,
-            "start": m.start(),
-            "end": m.end(),
-            "valid": pan_format_valid(raw),
-        })
+        validated = pan_format_valid(raw)
+        findings.append(Finding(
+            text=raw,
+            start=m.start(),
+            end=m.end(),
+            entity_type="PAN",
+            detector="regex_india",
+            confidence=1.0 if validated else 0.4,
+            validated=validated,
+        ))
     return findings
 
 
@@ -183,11 +189,11 @@ Customer record:
     results = scan_aadhaar(sample_text)
     print(f"Found {len(results)} Aadhaar-shaped candidates:\n")
     for r in results:
-        status = "VALID  " if r["valid"] else "INVALID"
-        print(f"  {status}  '{r['match']:<18}'  offsets=({r['start']:4d}, {r['end']:4d})")
+        status = "VALID  " if r.validated else "INVALID"
+        print(f"  {status}  '{r.text:<18}'  offsets=({r.start:4d}, {r.end:4d})  conf={r.confidence}")
 
     pan_results = scan_pan(sample_text)
     print(f"\nFound {len(pan_results)} PAN-shaped candidates:\n")
     for r in pan_results:
-        status = "VALID  " if r["valid"] else "INVALID"
-        print(f"  {status}  '{r['match']:<18}'  offsets=({r['start']:4d}, {r['end']:4d})")
+        status = "VALID  " if r.validated else "INVALID"
+        print(f"  {status}  '{r.text:<18}'  offsets=({r.start:4d}, {r.end:4d})  conf={r.confidence}")
