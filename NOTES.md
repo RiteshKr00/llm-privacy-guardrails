@@ -497,3 +497,30 @@ Honest framing: this is a small, synthetic corpus. Real-world numbers will diffe
 - The remaining FNs map cleanly to a hypothesis (English NER misses Indian names). Phase 4 will test that hypothesis with a different detector.
 
 ---
+
+## Day 10 — 2026-05-31
+
+### LLM factory wired
+
+`scratch/llm_factory.py` — single `get_llm()` returning a LangChain `BaseChatModel` based on the `LLM_PROVIDER` env var. Default: ollama. Supports gemini and openai by changing one env var; never need to touch code.
+
+Imports are **lazy inside the function** so we don't load all three SDKs on every call. Per-provider model overrides via `OLLAMA_MODEL` / `GEMINI_MODEL` / `OPENAI_MODEL`.
+
+Smoke test (`scratch/10_llm_hello.py`) confirms the chain works end-to-end with Ollama + llama3.2:3b.
+
+### Lesson: factory pattern locks in optionality before commitment
+
+By forcing every LLM call to go through `get_llm()`, swapping providers becomes a one-env-var change. The cost of writing this factory is ~30 lines and zero ongoing maintenance; the cost of NOT writing it is grep-and-replace pain when you eventually want to compare providers (or fall back to a cheaper one in production).
+
+The Gemini docstring in the factory also locks in the **Gemini 3.0+ temperature trap** memory: default is `1.0`, dropping to `0.7` causes infinite loops, go straight to `0.1` if you need determinism. Easier to read it in the right place at write-time than to hit the trap at runtime.
+
+### Next: Day 11 will test whether 3b is "enough"
+
+llama3.2:3b handles free-text generation easily (the smoke test was trivial for it). Structured-output extraction is qualitatively harder — small models sometimes return malformed JSON or invent offsets. Mitigations baked into Day 11:
+
+- LangChain's `.with_structured_output()` retries automatically on validation failure.
+- Verify offsets at the boundary: `text[finding.start:finding.end] == finding.text`; drop mismatches.
+
+If 3b can't hold the Pydantic schema reliably even with retries, the fallback is `llama3.1:8b` (5GB pull) or `qwen2.5:7b` (better at structured tasks), set via `OLLAMA_MODEL`. Or pivot to Gemini for the eval (`LLM_PROVIDER=gemini`).
+
+---
